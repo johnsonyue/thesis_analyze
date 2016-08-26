@@ -12,6 +12,7 @@ class node:
 		
 		#geoip info.
 		self.geoip = {}
+		self.foreign_neighbours = []
 		
 class topo_graph:
 	def __init__(self):
@@ -37,11 +38,10 @@ class topo_graph:
 		self.prev_index = 0
 		#helper member for add_node method.
 		self.is_node_visited = {}
-		self.geoip_helper = None
 			
 		##geoip info members.
-		
-		
+		self.geoip_helper = None
+	
 	####
 	##util functions.
 	####
@@ -170,8 +170,24 @@ class topo_graph:
 	def init_geoip(self):
 		self.geoip_helper = geoip.geoip_helper()
 
-	def mark_ip_geo(self):
+	def mark_geoip(self):
+		if (self.geoip_helper == None):
+			print "use init_geoip() first"
+			return
 		
+		for n in self.node:
+			n.geoip = self.geoip_helper.query(n.addr)
 	
-		
+	def get_foreign_neighbours(self):
+		data_src = ["bgp","mmdb","czdb"]
+		for e in self.networkx_graph.edges():
+			src = e[0]
+			dst = e[1]
+			res = []
+			for ds in data_src:
+				if (self.node[src].geoip[ds]["country"] != self.node[dst].geoip[ds]["country"]):
+					res.append(ds)
 
+			if (res != []):
+				self.node[src].foreign_neighbours.append(dst)
+				self.node[dst].foreign_neighbours.append(src)
