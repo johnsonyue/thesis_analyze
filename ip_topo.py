@@ -45,8 +45,17 @@ class topo_graph:
 	####
 	##util functions.
 	####
-	def set_root_ip(self, root_ip):
-		self.node[0].addr = root_ip
+	def get_root_ip(self, file_name):
+		f = open(file_name,'r')
+		for line in f.readlines():
+			if re.findall("#",line):
+				continue
+			list = line.strip().split('\t')
+			src = list[1]
+			f.close()
+			self.node[0].addr = src
+			self.node_dict[src] = 0
+			return src
 	
 	def clear_visited_flags(self):
 		for i in range(len(self.node)):
@@ -71,6 +80,7 @@ class topo_graph:
 	#each hop contains a tuple of ip,rtt,nTries.
 	def parse_hop(self, hop):
 		if len(hop) == 0:
+			self.prev_index = -1
 			return
 		addr = hop[0]
 		rtt = hop[1]
@@ -80,11 +90,8 @@ class topo_graph:
 			self.node.append(node(addr))
 			cur_index = len(self.node)-1
 			self.node_dict[addr] = cur_index
-
-			self.prev_index = cur_index
 		else:
 			cur_index = self.node_dict[addr]
-			self.prev_index = cur_index
 		
 		if self.prev_index != -1:
 			prev_node = self.node[self.prev_index]
@@ -93,9 +100,12 @@ class topo_graph:
 				prev_node.child_rtt[cur_index] = [rtt]
 			else:
 				prev_node.child_rtt[cur_index].append(rtt)
+		
+		self.prev_index = cur_index
 			
 	#build graph from single node data.
 	def build(self,file_name):
+		self.get_root_ip(file_name)
 		print "parsing traces..."
 		f = open(file_name, 'rb')
 		for line in f.readlines():
@@ -107,17 +117,17 @@ class topo_graph:
 			self.prev_index = 0
 			self.parse_trace_caida(trace)
 
-		print "building networkx graph object..."
-		self.build_networkx_graph()
-			
 	def build_networkx_graph(self):
+		print "building networkx graph object..."
 		for i in range(len(self.node)):
 			for j in range(len(self.node[i].child)):
 				self.networkx_graph.add_edge(i,self.node[i].child[j])
-						
+		
 	def calc_networkx_lcc(self):
 		print "getting the largest connected component..."
 		self.networkx_lcc = max(nx.connected_component_subgraphs(self.networkx_graph), key = len)
+		print len(self.networkx_lcc)
+
 	####
 	##merge another graph into current graph.
 	####
@@ -136,7 +146,7 @@ class topo_graph:
 		child = []
 		for c in n.child:
 			if not topo.is_node_visited[c]:
-				ret = self.add_node(topo, c, topo.node[c])
+				ret = self.add_node(topo, c)
 				child.append(ret)
 
 		#set index to return.
@@ -147,8 +157,6 @@ class topo_graph:
 			self.node_dict[n.addr] = index
 
 			n.child = child
-			for j in range(len(n.child)):
-				self.networkx_graph.add_edge(index,n.child[j])
 		else:
 			index = self.node_dict[n.addr]
 			for j in range(len(n.child)):
@@ -160,7 +168,6 @@ class topo_graph:
 						break
 				if not is_included:
 					self.node[index].child.append(c)
-					self.networkx_graph.add_edge(index,c)
 
 		return index
 	
@@ -168,17 +175,22 @@ class topo_graph:
 	##mark graph nodes.
 	####
 	def init_geoip(self):
+		print "initializing geoip helper ..."
 		self.geoip_helper = geoip.geoip_helper()
+		print "finished initializing geoip helper"
 
 	def mark_geoip(self):
 		if (self.geoip_helper == None):
 			print "use init_geoip() first"
 			return
 		
+		print "marking node geolocation ..."
 		for n in self.node:
 			n.geoip = self.geoip_helper.query(n.addr)
+		print "finished marking node geolocation"
 	
 	def get_foreign_neighbours(self):
+		print "getting foreign neighbours ..."
 		data_src = ["bgp","mmdb","czdb"]
 		for e in self.networkx_graph.edges():
 			src = e[0]
@@ -191,3 +203,5 @@ class topo_graph:
 			if (res != []):
 				self.node[src].foreign_neighbours.append(dst)
 				self.node[dst].foreign_neighbours.append(src)
+		
+		print "finished getting foreign neighbours"

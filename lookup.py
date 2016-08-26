@@ -125,7 +125,7 @@ class lookup:
 			print "\t"+cmd_str
 			os.system(cmd_str)
 		
-		print "\tparsing "+file+" ..."
+		print "\tparsing dump file ..."
 		f = open(self.dir+file)
 		for line in f.readlines():
 			self.parse_pfx_line(line)
