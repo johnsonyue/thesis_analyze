@@ -22,11 +22,6 @@ class topo_graph:
 		#dict for quick node lookup.
 		self.node_dict = {}
 		
-		##add root node.
-		r = node("0.0.0.0")
-		self.node.append(r)
-		self.node_dict["0.0.0.0"] = 0
-		
 		##adaption of networkx.
 		#networkx topo graph.
 		self.networkx_graph = nx.Graph()
@@ -45,18 +40,6 @@ class topo_graph:
 	####
 	##util functions.
 	####
-	def get_root_ip(self, file_name):
-		f = open(file_name,'r')
-		for line in f.readlines():
-			if re.findall("#",line):
-				continue
-			list = line.strip().split('\t')
-			src = list[1]
-			f.close()
-			self.node[0].addr = src
-			self.node_dict[src] = 0
-			return src
-	
 	def clear_visited_flags(self):
 		for i in range(len(self.node)):
 			self.is_node_visited[i] = False
@@ -105,7 +88,6 @@ class topo_graph:
 			
 	#build graph from single node data.
 	def build(self,file_name):
-		self.get_root_ip(file_name)
 		print "parsing traces..."
 		f = open(file_name, 'rb')
 		for line in f.readlines():
@@ -125,7 +107,14 @@ class topo_graph:
 		
 	def calc_networkx_lcc(self):
 		print "getting the largest connected component..."
-		self.networkx_lcc = max(nx.connected_component_subgraphs(self.networkx_graph), key = len)
+		#self.networkx_lcc = max(nx.connected_component_subgraphs(self.networkx_graph), key = len)
+		lcc_nodes = list(nx.dfs_preorder_nodes(self.networkx_graph, 0))
+		lcc_nodes_dict = {}
+		map ( lambda x:lcc_nodes_dict.setdefault(x,""), lcc_nodes )
+		self.networkx_lcc = nx.Graph()
+		for e in self.networkx_graph.edges():
+			if ( lcc_nodes_dict.has_key(e[0]) or lcc_nodes_dict.has_key(e[1]) ):
+				self.networkx_lcc.add_edge(e[0], e[1])
 		print len(self.networkx_lcc)
 
 	####
