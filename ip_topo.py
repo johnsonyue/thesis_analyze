@@ -40,15 +40,11 @@ class topo_graph:
 	####
 	##util functions.
 	####
-	def clear_visited_flags(self):
-		for i in range(len(self.node)):
-			self.is_node_visited[i] = False
-	
 	def get_node_num(self):
 		return len(self.node)
 
 	####
-	##helper function for build method.
+	##build function
 	####
 	def parse_trace_caida(self, trace):
 		for i in range(len(trace)):
@@ -105,21 +101,14 @@ class topo_graph:
 			for j in range(len(self.node[i].child)):
 				self.networkx_graph.add_edge(i,self.node[i].child[j])
 		
-	def calc_networkx_lcc(self):
-		print "getting the largest connected component..."
-		#self.networkx_lcc = max(nx.connected_component_subgraphs(self.networkx_graph), key = len)
-		lcc_nodes = list(nx.dfs_preorder_nodes(self.networkx_graph, 0))
-		lcc_nodes_dict = {}
-		map ( lambda x:lcc_nodes_dict.setdefault(x,""), lcc_nodes )
-		self.networkx_lcc = nx.Graph()
-		for e in self.networkx_graph.edges():
-			if ( lcc_nodes_dict.has_key(e[0]) or lcc_nodes_dict.has_key(e[1]) ):
-				self.networkx_lcc.add_edge(e[0], e[1])
-		print len(self.networkx_lcc)
+	
+	####
+	##merge function
+	####
+	def clear_visited_flags(self):
+		for i in range(len(self.node)):
+			self.is_node_visited[i] = False
 
-	####
-	##merge another graph into current graph.
-	####
 	def merge(self, topo):
 		topo.clear_visited_flags()
 		for i in range(len(topo.node)):
@@ -160,6 +149,21 @@ class topo_graph:
 
 		return index
 	
+	####
+	##largest connected component
+	####
+	def calc_networkx_lcc(self):
+		print "getting the largest connected component..."
+		#self.networkx_lcc = max(nx.connected_component_subgraphs(self.networkx_graph), key = len)
+		lcc_nodes = list(nx.dfs_preorder_nodes(self.networkx_graph, 0))
+		lcc_nodes_dict = {}
+		map ( lambda x:lcc_nodes_dict.setdefault(x,""), lcc_nodes )
+		self.networkx_lcc = nx.Graph()
+		for e in self.networkx_graph.edges():
+			if ( lcc_nodes_dict.has_key(e[0]) or lcc_nodes_dict.has_key(e[1]) ):
+				self.networkx_lcc.add_edge(e[0], e[1])
+		print len(self.networkx_lcc)
+
 	####
 	##mark graph nodes.
 	####

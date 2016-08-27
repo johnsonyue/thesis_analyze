@@ -1,5 +1,7 @@
 import ip_topo
 import json
+import pickle
+import networkx as nx
 
 #invoke after get_foreign_neighbours() method
 def get_border_json(topo, file_name):
@@ -31,4 +33,28 @@ def get_lcc_graph_json(topo, file_name):
 		
 	fp = open(file_name, 'wb')
 	fp.write( json.dumps({"nodes":nodes,"edges":edges}) )
+	fp.close()
+
+def save_node(topo, file_name):
+	fp = open(file_name, 'wb')
+	pickle.dump(topo.node, fp, -1)
+	fp.close()
+
+def save_networkx_graph(topo, file_name):
+	fp = open(file_name, 'wb')
+	res = topo.networkx_graph.edges()
+	pickle.dump(res, fp, -1)
+	fp.close()
+
+def restore_node(topo, file_name):
+	fp = open(file_name, 'rb')
+	topo.node = pickle.load(fp)
+	fp.close()
+
+def restore_networkx_graph(topo, file_name):
+	fp = open(file_name, 'rb')
+	edges = pickle.load(fp)
+
+	topo.networkx_graph = nx.Graph()
+	topo.networkx_graph.add_edge_from(edges)
 	fp.close()
