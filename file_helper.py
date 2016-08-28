@@ -56,5 +56,5 @@ def restore_networkx_graph(topo, file_name):
 	edges = pickle.load(fp)
 
 	topo.networkx_graph = nx.Graph()
-	topo.networkx_graph.add_edge_from(edges)
+	topo.networkx_graph.add_edges_from(edges)
 	fp.close()

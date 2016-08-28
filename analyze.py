@@ -36,6 +36,8 @@ class DateAnalyze():
 				print fn+" analyzed"
 				print self.topo.get_node_num()
 		
+		self.topo.build_networkx_graph()
+		
 		print "saving topo"
 		self.save_topo()
 		print "finished saving topo"
