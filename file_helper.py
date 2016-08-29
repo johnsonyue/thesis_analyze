@@ -13,10 +13,10 @@ def get_border_json(topo, file_name):
 			t = {i:n.foreign_neighbours}
 			border_list.append(t)
 			if (not node_dict.has_key(i)):
-				node_dict[i] = n.geoip
+				node_dict[i] = {"address":n.addr, "geoip":n.geoip}
 			for nbr in n.foreign_neighbours:
 				if (not node_dict.has_key(nbr)):
-					node_dict[i] = topo.node[nbr].geoip
+					node_dict[i] = {"address":topo.node[nbr].addr, "geoip":topo.node[nbr].geoip}
 	
 	fp = open(file_name, 'wb')
 	fp.write( json.dumps({"node":border_list, "geo":node_dict}) )
