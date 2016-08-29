@@ -14,6 +14,9 @@ class node:
 		self.geoip = {}
 		self.foreign_neighbours = []
 		
+		#monitor info.
+		self.monitor = []
+		
 class topo_graph:
 	def __init__(self):
 		##basic adj list.
@@ -109,13 +112,13 @@ class topo_graph:
 		for i in range(len(self.node)):
 			self.is_node_visited[i] = False
 
-	def merge(self, topo):
+	def merge(self, topo, monitor):
 		topo.clear_visited_flags()
 		for i in range(len(topo.node)):
 			if not topo.is_node_visited[i]:
-				self.add_node(topo, i)
+				self.add_node(topo, i, monitor)
 	
-	def add_node(self, topo, ind):
+	def add_node(self, topo, ind, monitor):
 		index = -1
 		
 		topo.is_node_visited[ind] = True
@@ -135,6 +138,8 @@ class topo_graph:
 			self.node_dict[n.addr] = index
 
 			n.child = child
+			
+			n.monitor = [monitor]
 		else:
 			index = self.node_dict[n.addr]
 			for j in range(len(n.child)):
@@ -146,6 +151,14 @@ class topo_graph:
 						break
 				if not is_included:
 					self.node[index].child.append(c)
+			for j in range(len(n.monitor)):
+				is_included = False
+				m = n.monitor[j]
+				if (monitor == m):
+					is_included = True
+					break
+			if not is_included:
+				self.node[index].monitor.append(monitor)
 
 		return index
 	

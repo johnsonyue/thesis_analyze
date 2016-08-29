@@ -25,11 +25,12 @@ class DateAnalyze():
 				os.system("gzip -d -k -q "+date_dir+"/"+fn)
 				warts_name = date_dir+"/"+fn.strip(".gz")
 				dump_name = date_dir+"/"+warts_name.split('.')[-2]
+				monitor_name = warts_name.split('.')[-2]
 				os.system("sc_analysis_dump "+warts_name+" > "+dump_name)
 				
 				temp_topo = ip_topo.topo_graph()
 				temp_topo.build(dump_name)
-				self.topo.merge(temp_topo)
+				self.topo.merge(temp_topo, monitor_name)
 				
 				os.system("rm -f "+warts_name)
 				os.system("rm -f "+dump_name)
