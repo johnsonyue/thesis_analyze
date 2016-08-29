@@ -1,6 +1,7 @@
 import config
 import mysql.connector as connector
 from mysql.connector import errorcode
+import json
 
 class db_helper():
 	def __init__(self):
@@ -60,7 +61,7 @@ class db_helper():
 			"  `src` int NOT NULL,"
 			"  `dst` int NOT NULL,"
 			"  `rtt` text,"
-			"  PRIMARY KEY (`src`)"
+			"  PRIMARY KEY (`src`, `dst`)"
 			") ENGINE=InnoDB")
 		
 		self.TABLES["border_tbl"] = (
@@ -79,7 +80,7 @@ class db_helper():
 	
 	def drop_tbl(self, date):
 		cursor = self.connect.cursor()
-		tbl_suffix = ["_node_tbl","edge_tbl","_border_tbl","_geoip_tbl"]
+		tbl_suffix = ["_node_tbl","_edge_tbl","_border_tbl","_geoip_tbl"]
 		for suf in tbl_suffix:
 			ddl = "DROP TABLE IF EXISTS `"+date+suf+"`;"
 			print ddl
@@ -117,12 +118,12 @@ class db_helper():
 			child_str = ""
 			for c in n.child:
 				child_str = child_str+str(c)+"|"
-			child_str.rstrip("|")
+			child_str = child_str.rstrip("|")
 			
 			monitor_str = ""
 			for m in n.monitor:
 				monitor_str = monitor_str+m+"|"
-			monitor_str.rstrip("|")
+			monitor_str = monitor_str.rstrip("|")
 
 			data_node = (id, addr, child_str, monitor_str)
 			cursor.execute(insert_node, data_node)
@@ -143,12 +144,11 @@ class db_helper():
 			n = topo.node[i]
 			for c in n.child:
 				rtt_str = ""
-				print c,n.child_rtt
 				rtt_list = n.child_rtt[c]
 				for r in rtt_list:
 					rtt_str = rtt_str+r+"|"
-				rtt_str.rstrip("|")
-				data_edge(i,c,rtt_str)
+				rtt_str = rtt_str.rstrip("|")
+				data_edge = (i,c,rtt_str)
 				cursor.execute(insert_edge, data_edge)
 			
 		self.connect.commit()
@@ -166,17 +166,19 @@ class db_helper():
 				"value(%s,%s)")
 		for i in range(len(topo.node)):
 			n = topo.node[i]
+			if len(n.foreign_neighbours) == 0:
+				continue
 			nbr_str = ""
 			for nbr in n.foreign_neighbours:
 				nbr_str = nbr_str+str(nbr)+"|"
-			nbr_str.rstrip("|")
+			nbr_str = nbr_str.rstrip("|")
 			data_border = (i, nbr_str)
 			cursor.execute(insert_border, data_border)
 			
 		self.connect.commit()
 		cursor.close()
 
-		print "finished inserting into: "+edge_tbl_name
+		print "finished inserting into: "+border_tbl_name
 
 		#inserting into table: geoip_tbl
 		geoip_tbl_name = date+"_geoip_tbl"
@@ -187,7 +189,8 @@ class db_helper():
 				"value(%s,%s)")
 		for i in range(len(topo.node)):
 			n = topo.node[i]
-			data_geoip = (i, n.geoip)
+			geoip_str = json.dumps(n.geoip)
+			data_geoip = (i, geoip_str)
 			cursor.execute(insert_geoip, data_geoip)
 			
 		self.connect.commit()

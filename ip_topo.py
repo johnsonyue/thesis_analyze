@@ -125,12 +125,13 @@ class topo_graph:
 		n = topo.node[ind]
 		#recursively get child.
 		child = []
+		child_rtt = {}
 		for c in n.child:
 			if not topo.is_node_visited[c]:
 				ret = self.add_node(topo, c, monitor)
 				child.append(ret)
 				#fix note: don't forget to update the member child_rtt too
-				n.child_rtt[ret] = n.child_rtt.pop(c)
+				child_rtt[ret] = n.child_rtt[c]
 
 		#set index to return.
 		#append or update node.
@@ -140,7 +141,8 @@ class topo_graph:
 			self.node_dict[n.addr] = index
 
 			n.child = child
-			
+			n.child_rtt = child_rtt
+
 			n.monitor = [monitor]
 		else:
 			index = self.node_dict[n.addr]
@@ -153,12 +155,10 @@ class topo_graph:
 						is_included = True
 						break
 				if not is_included:
-					print "not included", index, c, n.child_rtt
 					self.node[index].child.append(c)
-					self.node[index].child_rtt[c] = n.child_rtt[c]
+					self.node[index].child_rtt[c] = child_rtt[c]
 				else:
-					print "included", index, c, n.child_rtt
-					self.node[index].child_rtt[c].extend(n.child_rtt[c])
+					self.node[index].child_rtt[c].extend(child_rtt[c])
 
 			is_included = False
 			for j in range(len(n.monitor)):
