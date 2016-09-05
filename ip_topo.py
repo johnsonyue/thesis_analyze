@@ -46,6 +46,17 @@ class topo_graph:
 	def get_node_num(self):
 		return len(self.node)
 
+	def is_reserved(self, addr):
+		addr_list = addr.split('.')
+		if addr_list[0] == "10":
+			return True
+		elif addr_list[0]+"."+addr_list[1] == "192.168":
+			return True
+		elif addr_list[0] == "172" and int(addr_list[1]) in range(16,32):
+			return True
+		else:
+			return False
+
 	####
 	##build function
 	####
@@ -57,6 +68,8 @@ class topo_graph:
 				addr = hop_sections.split(',')[0]
 				rtt = hop_sections.split(',')[1]
 				hop = [addr, rtt]
+				if(self.is_reserved(hop[0])):
+					continue
 			self.parse_hop(hop)
 	
 	#each hop contains a tuple of ip,rtt,nTries.
@@ -104,7 +117,6 @@ class topo_graph:
 			for j in range(len(self.node[i].child)):
 				self.networkx_graph.add_edge(i,self.node[i].child[j])
 		
-	
 	####
 	##merge function
 	####
@@ -206,7 +218,7 @@ class topo_graph:
 	
 	def get_foreign_neighbours(self):
 		print "getting foreign neighbours ..."
-		data_src = ["bgp","mmdb","czdb"]
+		data_src = ["bgp","mmdb"]
 		for e in self.networkx_graph.edges():
 			src = e[0]
 			dst = e[1]

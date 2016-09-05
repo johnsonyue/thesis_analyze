@@ -49,41 +49,47 @@ class db_helper():
 	
 	def get_ddl(self, date):
 		self.TABLES["node_tbl"] = (
-			"CREATE TABLE `"+date+"_node_tbl` ("
-			"  `id` int NOT NULL,"
-			"  `addr` varchar(16) NOT NULL,"
-			"  `child` text,"
-			"  `monitor` text,"
-			"  PRIMARY KEY (`id`)"
+			"CREATE TABLE "+date+"_node_tbl ("
+			"  id int NOT NULL,"
+			"  addr varchar(16) NOT NULL,"
+			"  child text,"
+			"  monitor text,"
+			"  PRIMARY KEY (id)"
 			") ENGINE=InnoDB")
 
 		self.TABLES["edge_tbl"] = (
-			"CREATE TABLE `"+date+"_edge_tbl` ("
-			"  `src` int NOT NULL,"
-			"  `dst` int NOT NULL,"
-			"  `rtt` text,"
-			"  PRIMARY KEY (`src`, `dst`)"
+			"CREATE TABLE "+date+"_edge_tbl ("
+			"  src int NOT NULL,"
+			"  dst int NOT NULL,"
+			"  rtt text,"
+			"  PRIMARY KEY (src, dst),"
+			"  FOREIGN KEY (src) REFERENCES "+date+"_node_tbl(id),"
+			"  FOREIGN KEY (dst) REFERENCES "+date+"_node_tbl(id)"
 			") ENGINE=InnoDB")
 		
 		self.TABLES["border_tbl"] = (
-			"CREATE TABLE `"+date+"_border_tbl` ("
-			"  `id` int NOT NULL,"
-			"  `foreign_neighbours` text,"
-			"  PRIMARY KEY (`id`)"
+			"CREATE TABLE "+date+"_border_tbl ("
+			"  id int NOT NULL,"
+			"  foreign_neighbours text,"
+			"  PRIMARY KEY (id),"
+			"  FOREIGN KEY (id) REFERENCES "+date+"_node_tbl(id)"
 			") ENGINE=InnoDB")
 		
 		self.TABLES["geoip_tbl"] = (
-			"CREATE TABLE `"+date+"_geoip_tbl` ("
-			"  `id` int NOT NULL,"
-			"  `geoip` text,"
-			"  PRIMARY KEY (`id`)"
+			"CREATE TABLE "+date+"_geoip_tbl ("
+			"  id int NOT NULL,"
+			"  geoip text,"
+			"  PRIMARY KEY (id),"
+			"  FOREIGN KEY (id) REFERENCES "+date+"_node_tbl(id)"
 			") ENGINE=InnoDB")
 	
 	def drop_graph_tbl(self, date):
+		#drop app table first because of the foreign key constraints.
+		self.drop_app_tbl(date)
 		cursor = self.connect.cursor()
-		tbl_suffix = ["_node_tbl","_edge_tbl"]
+		tbl_suffix = ["_edge_tbl","_node_tbl"]
 		for suf in tbl_suffix:
-			ddl = "DROP TABLE IF EXISTS `"+date+suf+"`;"
+			ddl = "DROP TABLE IF EXISTS "+date+suf+";"
 			print ddl
 			cursor.execute(ddl)
 	
@@ -91,12 +97,14 @@ class db_helper():
 		cursor = self.connect.cursor()
 		tbl_suffix = ["_border_tbl","_geoip_tbl"]
 		for suf in tbl_suffix:
-			ddl = "DROP TABLE IF EXISTS `"+date+suf+"`;"
+			ddl = "DROP TABLE IF EXISTS "+date+suf+";"
 			print ddl
 			cursor.execute(ddl)
 
 	def create_tbl(self, date):
-		for name,ddl in self.TABLES.iteritems():
+		tbl_list = ["node_tbl", "edge_tbl", "border_tbl", "geoip_tbl"]
+		for name in tbl_list:
+			ddl = self.TABLES[name]
 			cursor = self.connect.cursor()
 			try:
 				print "creating table {}:".format(date+"_"+name),
