@@ -224,7 +224,7 @@ class topo_graph:
 			dst = e[1]
 			res = []
 			for ds in data_src:
-				if (self.node[src].geoip[ds]["country"] != self.node[dst].geoip[ds]["country"]):
+				if (self.node[src].geoip[ds]["country"].lower() != self.node[dst].geoip[ds]["country"].lower()):
 					res.append(ds)
 
 			if (res != []):
