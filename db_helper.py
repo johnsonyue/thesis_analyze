@@ -2,6 +2,7 @@ import config
 import mysql.connector as connector
 from mysql.connector import errorcode
 import json
+import ip_topo
 
 class db_helper():
 	def __init__(self):
@@ -78,14 +79,22 @@ class db_helper():
 			"  PRIMARY KEY (`id`)"
 			") ENGINE=InnoDB")
 	
-	def drop_tbl(self, date):
+	def drop_graph_tbl(self, date):
 		cursor = self.connect.cursor()
-		tbl_suffix = ["_node_tbl","_edge_tbl","_border_tbl","_geoip_tbl"]
+		tbl_suffix = ["_node_tbl","_edge_tbl"]
 		for suf in tbl_suffix:
 			ddl = "DROP TABLE IF EXISTS `"+date+suf+"`;"
 			print ddl
 			cursor.execute(ddl)
-		
+	
+	def drop_app_tbl(self, date):
+		cursor = self.connect.cursor()
+		tbl_suffix = ["_border_tbl","_geoip_tbl"]
+		for suf in tbl_suffix:
+			ddl = "DROP TABLE IF EXISTS `"+date+suf+"`;"
+			print ddl
+			cursor.execute(ddl)
+
 	def create_tbl(self, date):
 		for name,ddl in self.TABLES.iteritems():
 			cursor = self.connect.cursor()
@@ -197,3 +206,44 @@ class db_helper():
 		cursor.close()
 
 		print "finished inserting into: "+geoip_tbl_name
+	
+	def restore_topo(self, topo, date):
+		#restoring from table: node_tbl
+		node_tbl_name = date+"_node_tbl"
+		print "restoring from: "+node_tbl_name
+		cursor = self.connect.cursor()
+		select_node =	("SELECT id, addr, child, monitor "
+				"FROM "+node_tbl_name+" "
+				"ORDER BY id ASC")
+		print select_node
+		
+		cursor.execute(select_node)
+		for (id, addr, child, monitor) in cursor:
+			n = ip_topo.node(addr)
+			n.child = []
+			if child != "":
+				map ( lambda x: n.child.append(int(x)), child.split('|') )
+			n.monitor = monitor.split('|')
+			topo.node.append(n)
+		cursor.close()
+
+		print "finished restoring from: "+node_tbl_name
+		
+		#restoring from table: edge_tbl
+		edge_tbl_name = date+"_edge_tbl"
+		print "restoring from: "+edge_tbl_name
+		cursor = self.connect.cursor()
+		select_edge =	("SELECT src,dst,rtt "
+				"FROM "+edge_tbl_name+" ")
+		print select_edge
+
+		cursor.execute(select_edge)
+		for (src, dst, rtt) in cursor:
+			rtt_list = rtt.split('|')
+			topo.node[src].child_rtt[dst] = rtt_list
+		cursor.close()
+
+		print "finished selecting from: "+edge_tbl_name
+		
+		#rebuild networkx graph
+		topo.build_networkx_graph()

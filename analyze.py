@@ -42,11 +42,10 @@ class DateAnalyze():
 				print fn+" analyzed"
 				print self.topo.get_node_num()
 		
-		self.topo.build_networkx_graph()
-		
-		print "pickling topo"
-		self.pickle_topo()
-		print "finished pickling topo"
+		#self.topo.build_networkx_graph()
+		#print "pickling topo"
+		#self.pickle_topo()
+		#print "finished pickling topo"
 		
 		print "exporting topo to db"
 		self.export_topo_to_db()
@@ -57,28 +56,32 @@ class DateAnalyze():
 	####
 	def export_topo_to_db(self):
 		self.db_helper.setup(self.date)
-		self.db_helper.drop_tbl(self.date)
+		self.db_helper.drop_graph_tbl(self.date)
 		self.db_helper.create_tbl(self.date)
 		self.db_helper.export_graph_tbls(self.topo, self.date)
 		self.db_helper.close()
 	
 	def export_border_to_db(self):
 		self.db_helper.setup(self.date)
-		self.db_helper.drop_tbl(self.date)
+		self.db_helper.drop_app_tbl(self.date)
 		self.db_helper.create_tbl(self.date)
 		self.db_helper.export_border_tbls(self.topo, self.date)
 		self.db_helper.close()
 	
-	def pickle_topo(self):
-		date_dir = self.data_dir+"/"+self.date
-		file_helper.save_node(self.topo, date_dir+"/"+self.date+".node.pkl")
-		file_helper.save_networkx_graph(self.topo, date_dir+"/"+self.date+".networkx_graph.pkl")
+	def restore_topo_from_db(self):
+		self.db_helper.setup(self.date)
+		self.db_helper.restore_topo(self.topo, self.date)
+		self.db_helper.close()
 	
-	def restore_topo(self):
-		date_dir = self.data_dir+"/"+self.date
-		file_helper.restore_node(self.topo, date_dir+"/"+self.date+".node.pkl")
-		file_helper.restore_networkx_graph(self.topo, date_dir+"/"+self.date+".networkx_graph.pkl")
-	
+	#deprecated for performance reasons.
+	#def pickle_topo(self):
+	#	date_dir = self.data_dir+"/"+self.date
+	#	file_helper.save_node(self.topo, date_dir+"/"+self.date+".node.pkl")
+	#	file_helper.save_networkx_graph(self.topo, date_dir+"/"+self.date+".networkx_graph.pkl")
+	#def restore_topo(self):
+	#	date_dir = self.data_dir+"/"+self.date
+	#	file_helper.restore_node(self.topo, date_dir+"/"+self.date+".node.pkl")
+	#	file_helper.restore_networkx_graph(self.topo, date_dir+"/"+self.date+".networkx_graph.pkl")
 	
 	####
 	##app analysis
@@ -121,7 +124,7 @@ def main(argv):
 		analyze.analyze_date_caida()
 	elif type == "app":
 		print "restoring topo"
-		analyze.restore_topo()
+		analyze.restore_topo_from_db()
 		print "finished restoring topo"
 		analyze.analyze_lcc()
 		analyze.analyze_geoip()
