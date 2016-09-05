@@ -36,7 +36,8 @@ class geoip_helper():
 	def query_from_mmdb(self, ip):
 		try:
 			response = self.reader.city(ip)
-			if response.location.country.iso_code == None:
+			country = response.country.iso_code 
+			if (country == None):
 				country = "*"
 			return {"longitude":response.location.longitude, "latitude":response.location.latitude, "country":country}
 		except geoip2.errors.AddressNotFoundError:
