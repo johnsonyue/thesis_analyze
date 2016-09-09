@@ -39,12 +39,18 @@ class topo_graph:
 			
 		##geoip info members.
 		self.geoip_helper = None
+		
+		##target.
+		self.target_dict = {}
 	
 	####
 	##util functions.
 	####
 	def get_node_num(self):
 		return len(self.node)
+
+	def get_target_num(self):
+		return len(self.target_dict.keys())
 
 	def is_reserved(self, addr):
 		addr_list = addr.split('.')
@@ -111,6 +117,15 @@ class topo_graph:
 			self.prev_index = 0
 			self.parse_trace_caida(trace)
 
+			#to record the destination of each trace.
+			self.target_dict[sections[2]] = ""
+	
+	def build_iplane(self,file_name):
+		print "parsing traces (iplane)..."
+		f = open(file_name, 'rb')
+		f.close()
+		return ""
+
 	def build_networkx_graph(self):
 		print "building networkx graph object..."
 		for i in range(len(self.node)):
@@ -129,6 +144,10 @@ class topo_graph:
 		for i in range(len(topo.node)):
 			if not topo.is_node_visited[i]:
 				self.add_node(topo, i, monitor)
+		
+		#to merge destination dict.
+		for k in topo.target_dict.keys():
+			self.target_dict[k] = ""
 	
 	def add_node(self, topo, ind, monitor):
 		index = -1

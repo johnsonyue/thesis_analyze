@@ -41,6 +41,7 @@ class DateAnalyze():
 				os.system("rm -f "+dump_name)
 				print fn+" analyzed"
 				print self.topo.get_node_num()
+				print self.topo.get_target_num()
 		
 		#self.topo.build_networkx_graph()
 		#print "pickling topo"
@@ -82,6 +83,12 @@ class DateAnalyze():
 	#	date_dir = self.data_dir+"/"+self.date
 	#	file_helper.restore_node(self.topo, date_dir+"/"+self.date+".node.pkl")
 	#	file_helper.restore_networkx_graph(self.topo, date_dir+"/"+self.date+".networkx_graph.pkl")
+	
+	####
+	##get monitor info
+	####
+	def get_monitor(self):
+		file_helper.get_caida_monitor(self.data_dir+"/caida_monitor.json")
 	
 	####
 	##app analysis
@@ -128,6 +135,10 @@ def main(argv):
 		print "finished restoring topo"
 		analyze.analyze_lcc()
 		analyze.analyze_geoip()
+	elif type == "monitor":
+		print "getting monitor info ... "
+		analyze.get_monitor()
+		print "finished getting monitor info"
 
 if __name__ == "__main__":
 	main(sys.argv)
