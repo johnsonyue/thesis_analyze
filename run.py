@@ -2,7 +2,18 @@ import config
 import os
 import signal
 
+date = ""
+date_dir = ""
+
+def sig_handler(sig, frame):
+	if(date != ""):
+		print "analyze process for "+date+" terminated."
+		os.system("rm -f "+date_dir+"/"+date+".log")
+	exit()
+
 def main():
+	signal.signal(signal.SIGINT, sig_handler)
+
 	config = config.get_config_section_dict("config.ini","data")
 	log_dir = config["log_dir"]
 	data_dir = config["data_dir"]
