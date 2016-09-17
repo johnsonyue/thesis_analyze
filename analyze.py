@@ -27,6 +27,8 @@ class DateAnalyze():
 		for fn in os.listdir(date_dir):
 			if (re.findall(".*\.gz$",fn)):
 				print "analyzing "+fn+" ..."
+				if (os.path.exists(date_dir+"/"+fn.rstrip(".gz"))):
+					os.system("rm -f "+date_dir+"/"+fn.rstrip(".gz"))
 				os.system("gzip -d -k -q "+date_dir+"/"+fn)
 				warts_name = date_dir+"/"+fn.strip(".gz")
 				dump_name = date_dir+"/"+warts_name.split('.')[-2]
