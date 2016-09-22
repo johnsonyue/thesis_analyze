@@ -3,6 +3,7 @@ import mysql.connector as connector
 from mysql.connector import errorcode
 import json
 import ip_topo
+import re
 
 class db_helper():
 	def __init__(self):
@@ -17,6 +18,10 @@ class db_helper():
 		host = self.cfg["host"]
 		print user,password,host
 		self.connect = connector.connect(user=user, password=password, host=host)
+	
+	def setup_withoutdate(self):
+		self.connect_to_db()
+		self.use_database()
 	
 	def setup(self, date):
 		self.connect_to_db()
@@ -82,7 +87,17 @@ class db_helper():
 			"  PRIMARY KEY (id),"
 			"  FOREIGN KEY (id) REFERENCES "+date+"_node_tbl(id)"
 			") ENGINE=InnoDB")
-	
+		
+				
+		self.TABLES["acc_tbl"] = (
+			"CREATE TABLE IF NOT EXISTS acc_tbl ("
+			"  addr varchar(16) NOT NULL,"
+			"  geoip text,"
+			"  log text,"
+			"  PRIMARY KEY (addr),"
+			"  INDEX ind_addr (addr)"
+			")ENGINE=InnoDB")
+		
 	def drop_graph_tbl(self, date):
 		#drop app table first because of the foreign key constraints.
 		self.drop_app_tbl(date)
@@ -215,6 +230,25 @@ class db_helper():
 
 		print "finished inserting into: "+geoip_tbl_name
 	
+	def export_geoip_tbls(self, topo, date):
+		#inserting into table: geoip_tbl
+		geoip_tbl_name = date+"_geoip_tbl"
+		print "inserting into: "+geoip_tbl_name
+		cursor = self.connect.cursor()
+		insert_geoip =	("INSERT INTO "+geoip_tbl_name+" "
+				"(id, geoip) "
+				"value(%s,%s)")
+		for i in range(len(topo.node)):
+			n = topo.node[i]
+			geoip_str = json.dumps(n.geoip)
+			data_geoip = (i, geoip_str)
+			cursor.execute(insert_geoip, data_geoip)
+			
+		self.connect.commit()
+		cursor.close()
+
+		print "finished inserting into: "+geoip_tbl_name
+	
 	def restore_topo(self, topo, date):
 		#restoring from table: node_tbl
 		node_tbl_name = date+"_node_tbl"
@@ -255,3 +289,150 @@ class db_helper():
 		
 		#rebuild networkx graph
 		topo.build_networkx_graph()
+
+	def get_info(self, date):
+		node_cnt = -1
+		node_tbl_name = date+"_node_tbl"
+		cursor = self.connect.cursor()
+		select_node = "SELECT count(*) as count FROM "+node_tbl_name
+		print select_node
+		
+		cursor.execute(select_node)
+		for (count) in cursor:
+			node_cnt = count
+
+		edge_cnt = -1
+		edge_tbl_name = date+"_edge_tbl"
+		select_node = "SELECT count(*) as count FROM "+edge_tbl_name
+		print select_node
+		cursor.execute(select_node)
+		for (count) in cursor:
+			edge_cnt = count
+
+		cursor.close()
+		
+		return {"node_cnt":node_cnt, "edge_cnt":edge_cnt}
+	
+	def get_addr(self, date, ind):
+		#restoring from table: node_tbl
+		cursor = self.connect.cursor()
+		select_node =   ("SELECT node.addr FROM "+date+"_node_tbl as node "
+				"WHERE node.id="+str(ind))
+		
+		cursor.execute(select_node)
+		res = ""
+		for c in cursor:
+			res = c[0]
+		cursor.close()
+
+		return res
+	
+	def get_edge_list(self, date, start, limit):
+		#restoring from table: node_tbl
+		cursor = self.connect.cursor(buffered=True)
+		select_node = ("SELECT src,dst FROM "+date+"_edge_tbl LIMIT "+str(start)+","+str(limit))
+		print select_node
+		res = []
+		cursor.execute(select_node)
+		for (src,dst) in cursor:
+			t = (self.get_addr(date,src), self.get_addr(date,dst))
+			res.append(t)
+			c = cursor.fetchone()
+		cursor.close()
+
+		return res
+	
+	def create_addr_index(self, date):
+		cursor = self.connect.cursor()
+		create_index =  ("CREATE INDEX "+date+"_ind_addr ON "+
+				date+"_node_tbl (addr)")
+		try:
+			print "creating index {}:".format(date+"_node_tbl"),
+			print create_index
+			cursor.execute(create_index)
+		except connector.Error as err:
+			if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+				print("already exists.")
+			else:
+				print(err.msg)
+		else:
+			print ("OK")
+		
+		create_index =  ("CREATE INDEX "+date+"_ind_id ON "+
+				date+"_node_tbl (id)")
+		try:
+			print "creating index {}:".format(date+"_node_tbl"),
+			print create_index
+			cursor.execute(create_index)
+		except connector.Error as err:
+			if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+				print("already exists.")
+			else:
+				print(err.msg)
+		else:
+			print ("OK")
+
+
+		cursor.close()
+	
+	def get_geoip(self, date, addr):
+		cursor = self.connect.cursor()
+		select_node =   ("SELECT geoip.geoip FROM "+date+"_node_tbl as node, "+
+				date+"_geoip_tbl as geoip WHERE node.addr=\""+addr+"\" and "
+				"node.id=geoip.id")
+		
+		cursor.execute(select_node)
+		res = ""
+		for (geoip) in cursor:
+			res = geoip
+		return res
+
+	def touch_acc(self):
+		tbl_name = "acc_tbl"
+		ddl = self.TABLES[tbl_name]
+		cursor = self.connect.cursor()
+		try:
+			print "creating table {}:".format(tbl_name),
+			print ddl,
+			cursor.execute(ddl)
+		except connector.Error as err:
+			if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+				print("already exists.")
+			else:
+				print(err.msg)
+		else:
+			print ("OK")
+		
+		cursor.close()
+	
+	def update_nodes_to_acc(self, nodes, date):
+		cursor = self.connect.cursor()
+
+		for nd in nodes:
+			addr = nd.addr
+			geoip = json.dumps(nd.geoip)
+			acc_tbl_name = "acc_tbl"
+			select_node =   ("SELECT addr,geoip,log FROM "+acc_tbl_name+" "
+					"WHERE addr=\""+addr+"\"")
+			
+			cursor.execute(select_node)
+	
+			node = None
+			for n in cursor:
+				node = n
+			if node:
+				log = node[2]
+				if (not re.findall(date, log)):
+					log = log+"|"+date
+					update_node =   ("UPDATE "+acc_tbl_name+" "
+							"SET log="+log+" "
+							"WHERE addr=\""+addr+"\"")
+					cursor.execute(update_node)
+			else:
+				insert_node =   ("INSERT INTO "+acc_tbl_name+" "
+						"VALUES (%s, %s, %s)")
+				data_node = (addr, json.dumps(geoip), date)
+				cursor.execute(insert_node, data_node)
+			
+		self.connect.commit()
+		cursor.close()

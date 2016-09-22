@@ -1,6 +1,7 @@
 import networkx as nx
 import re
 import geoip
+import os
 
 class node:
 	def __init__(self,ip):
@@ -119,7 +120,39 @@ class topo_graph:
 
 			#to record the destination of each trace.
 			self.target_dict[sections[2]] = ""
+
+	def build_popen_pipeline(self, date_dir, fn):
+		print "parsing traces..."
+		#start producer process.
+		fl = os.popen("gzip -c -d -k -q "+date_dir+"/"+fn+" | sc_analysis_dump ")
+		for line in fl:
+			trace = []
+			if (re.findall("#",line)):
+				continue
+			sections = line.strip('\n').split('\t')
+			trace.extend(sections[13:])
+			self.prev_index = 0
+			self.parse_trace_caida(trace)
+
+			#to record the destination of each trace.
+			self.target_dict[sections[2]] = ""
 	
+	def build_pipeline(self, date_dir, fn):
+		print "parsing traces..."
+		#start producer process.
+		fl = os.popen("gzip -c -d -k -q "+date_dir+"/"+fn+" | sc_analysis_dump ")
+		for line in fl:
+			trace = []
+			if (re.findall("#",line)):
+				continue
+			sections = line.strip('\n').split('\t')
+			trace.extend(sections[13:])
+			self.prev_index = 0
+			self.parse_trace_caida(trace)
+
+			#to record the destination of each trace.
+			self.target_dict[sections[2]] = ""
+
 	def build_iplane(self,file_name):
 		print "parsing traces (iplane)..."
 		f = open(file_name, 'rb')

@@ -28,7 +28,7 @@ class lookup:
 
 	#asn => cc.
 	def get_asn2cc(self):
-		print ("\tbuilding asn2cc ...")
+		#print ("\tbuilding asn2cc ...")
 		if not os.path.exists(self.dir):
 			os.makedirs(self.dir)
 
@@ -44,7 +44,7 @@ class lookup:
 			for line in f.readlines():
 				self.parse_asn_line(line)
 			f.close()
-			print ("\t"+file+" parsed")
+			#print ("\t"+file+" parsed")
 		
 			self.sorted = sorted(self.asn2cc.iteritems(), key=lambda d:int(d[0]))
 			f = open(self.dir+out_file, 'wb')
@@ -115,22 +115,22 @@ class lookup:
 		ptr["asn"] = list[2].strip('\n')
 	
 	def get_pfx2asn(self):
-		print "\tbuilding pfx2asn ..."
+		#print "\tbuilding pfx2asn ..."
 		if not os.path.exists(self.dir):
 			os.makedirs(self.dir)
 		
 		file = "pfx2asn"
 		if not os.path.exists(self.dir+file):
 			cmd_str = "bgpdump -m `python routeviews.py "+self.dir+"` | python parse.py "+self.dir+"/"+file
-			print "\t"+cmd_str
+			#print "\t"+cmd_str
 			os.system(cmd_str)
 		
-		print "\tparsing dump file ..."
+		#print "\tparsing dump file ..."
 		f = open(self.dir+file)
 		for line in f.readlines():
 			self.parse_pfx_line(line)
 		f.close()
-		print "\tparsed."
+		#print "\tparsed."
 		
 	#query
 	def get_asn_from_pfx(self, ip):
