@@ -10,9 +10,12 @@ while read strline; do
 		date_dir=$data_dir"/"$date"/"
 		[ ! -d $date_dir ] && continue
 		for fn in $(ls $date_dir); do
-			echo "gzip -c -d -k -q $date_dir"/"$fn | sc_analysis_dump"
+			[ ! -n "`echo $date_dir"/"$fn | grep ".gz"`" ] && continue
+			temp_file=$date_dir"/"${fn%.gz*}
+			[ -f $temp_file ] && rm -f $temp_file && echo "rm -f $temp_file"
+			#echo "gzip -c -d -k -q $date_dir"/"$fn | sc_analysis_dump "
+			#gzip -c -d -k -q $date_dir"/"$fn | sc_analysis_dump | python $code_dir"/"analyze_lite.py $date date
 			gzip -c -d -k -q $date_dir"/"$fn | sc_analysis_dump
 		done
-			
 	fi
 done < $log_dir

@@ -137,21 +137,24 @@ class topo_graph:
 			#to record the destination of each trace.
 			self.target_dict[sections[2]] = ""
 	
-	def build_pipeline(self, date_dir, fn):
+	def build_pipeline(self):
 		print "parsing traces..."
 		#start producer process.
-		fl = os.popen("gzip -c -d -k -q "+date_dir+"/"+fn+" | sc_analysis_dump ")
-		for line in fl:
-			trace = []
-			if (re.findall("#",line)):
-				continue
-			sections = line.strip('\n').split('\t')
-			trace.extend(sections[13:])
-			self.prev_index = 0
-			self.parse_trace_caida(trace)
-
-			#to record the destination of each trace.
-			self.target_dict[sections[2]] = ""
+		try:
+			while True:
+				line = raw_input()
+				if (re.findall("#",line)):
+					continue
+				trace = []
+				sections = line.strip('\n').split('\t')
+				trace.extend(sections[13:])
+				self.prev_index = 0
+				self.parse_trace_caida(trace)
+	
+				#to record the destination of each trace.
+				self.target_dict[sections[2]] = ""
+		except:
+			return
 
 	def build_iplane(self,file_name):
 		print "parsing traces (iplane)..."

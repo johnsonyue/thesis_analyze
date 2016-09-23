@@ -42,6 +42,14 @@ class DateAnalyze():
 				print self.topo.get_node_num()
 				print self.topo.get_target_num()
 
+		print "exporting topo to db"
+		self.export_topo_to_db()
+		print "finished exporting topo to db"
+	
+	def analyze_date_caida_pipeline(self):
+		self.topo = ip_topo.topo_graph()
+		self.topo.build_pipeline()
+		print self.topo.get_node_num(), self.topo.get_target_num()
 
 		print "exporting topo to db"
 		self.export_topo_to_db()
@@ -71,10 +79,7 @@ class DateAnalyze():
 		self.db_helper.setup(self.date)
 		self.db_helper.touch_acc()
 
-		'''
-		for n in self.topo.node:
-			self.db_helper.update_node_to_acc(n.addr, str(n.geoip), self.date)
-		'''
+		print "updating acc node ... "
 		self.db_helper.update_nodes_to_acc(self.topo.node,self.date)
 		self.db_helper.close()
 
@@ -110,7 +115,7 @@ def main(argv):
 	type = argv[2]
 	analyze = DateAnalyze(date)
 	if type == "date":
-		analyze.analyze_date_caida()
+		analyze.analyze_date_caida_pipeline()
 		analyze.analyze_geoip()
 		analyze.update_acc_node()
 	elif type == "monitor":
